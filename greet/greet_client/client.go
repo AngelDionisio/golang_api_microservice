@@ -50,6 +50,8 @@ func doUnary(c greetpb.GreetServiceClient) {
 	// c.Greet(context.Background(), in *GreetRequest, opts ...grpc.CallOption) (*GreetResponse, error)
 }
 
+// doServerStreaming sends a GreetManyTimesRequest and prints the responses from the server
+// while there are messages to be sent. Using io.EOF (io.EndOfFile) to break out of infinite for loop
 func doServerStreaming(c greetpb.GreetServiceClient) {
 	fmt.Println("Starting to do a service streaming RPC...")
 
