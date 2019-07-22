@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/simple/golang_api_microservice/calculator/calculatorpb"
@@ -22,7 +23,9 @@ func main() {
 
 	c := calculatorpb.NewCalculatorServiceClient(cc)
 
-	doUnarySumOperation(c)
+	// doUnarySumOperation(c)
+
+	doServerStreaming(c)
 
 }
 
@@ -40,4 +43,28 @@ func doUnarySumOperation(c calculatorpb.CalculatorServiceClient) {
 	}
 
 	log.Printf("Response from Sum: %v\n", res.SumResult)
+}
+
+func doServerStreaming(c calculatorpb.CalculatorServiceClient) {
+	log.Printf("Starting a PrimeDecomposition Server Streaming RPC... %v\n", c)
+	req := &calculatorpb.PrimeNumberDecompositionRequest{
+		Number: 12390392840,
+	}
+
+	stream, err := c.PrimeNumberDecomposition(context.Background(), req)
+	if err != nil {
+		log.Fatalf("error while calling PrimeNumberDecomposition RPC: %v", err)
+	}
+
+	for {
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("error while receiving stream: %v", err)
+		}
+		log.Printf("Response from PrimeNumberDecomposition: %v\n", res.GetPrimeFactor())
+	}
+
 }
