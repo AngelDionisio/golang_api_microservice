@@ -25,7 +25,9 @@ func main() {
 
 	// doUnarySumOperation(c)
 
-	doServerStreaming(c)
+	// doServerStreaming(c)
+
+	doClientStreaming(c)
 
 }
 
@@ -67,4 +69,29 @@ func doServerStreaming(c calculatorpb.CalculatorServiceClient) {
 		log.Printf("Response from PrimeNumberDecomposition: %v\n", res.GetPrimeFactor())
 	}
 
+}
+
+func doClientStreaming(c calculatorpb.CalculatorServiceClient) {
+	log.Printf("Starting a ComputeAverage Client Streaming RPC")
+
+	stream, err := c.ComputeAverage(context.Background())
+	if err != nil {
+		log.Fatalf("error while opening stream: %v", err)
+	}
+
+	numbers := []int32{3, 5, 9, 54, 23}
+
+	for _, number := range numbers {
+		fmt.Printf("Sending number: %v\n", number)
+		stream.Send(&calculatorpb.ComputeAverageRequest{
+			Number: number,
+		})
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("error while receiving response RPC: %v", err)
+	}
+
+	fmt.Printf("The average is: %v", res.GetAverage())
 }
