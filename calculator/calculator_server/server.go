@@ -10,34 +10,43 @@ import (
 	"google.golang.org/grpc"
 )
 
+// this server struct needs to implement the functions of the
+// target interface (in this case "CalculatorServiceServer")
+// which makes this server also of type CalculatorServiceServer
+// we can achieve this by creating the functions defined
+// by CalculatorServiceServer with methods
 type server struct{}
 
-func (*server) Add(ctx context.Context, req *calculatorpb.CalculatorRequest) (*calculatorpb.CalculatorResponse, error) {
-	fmt.Printf("Add function was invoked with %v\n", req)
-	num1 := req.GetSum().GetNum_1()
-	num2 := req.GetSum().GetNum_2()
+func (*server) Sum(ctx context.Context, req *calculatorpb.SumRequest) (*calculatorpb.SumResponse, error) {
+	log.Printf("Recieved Sum RPC: %v\n", req)
+	firstNumber := req.FirstNumber
+	secondNumber := req.SecondNumber
 
-	result := num1 + num2
+	sum := firstNumber + secondNumber
 
-	res := &calculatorpb.CalculatorResponse{
-		Result: result,
+	res := &calculatorpb.SumResponse{
+		SumResult: sum,
 	}
 
 	return res, nil
 }
 
 func main() {
-	fmt.Println("Hello from Calculator server!")
+	fmt.Println("Calculator Server called")
 
-	lis, err := net.Listen("tcp", "0.0.0.0:50052")
+	// set which port to listen on
+	lis, err := net.Listen("tcp", "0.0.0.0:50053")
 	if err != nil {
-		log.Fatalf("Failed to listen due to %v", err)
+		log.Fatalf("Server could not listen on specified port: %v", err)
 	}
 
-	serv := grpc.NewServer()
-	calculatorpb.RegisterCalculatorServiceServer(serv, &server{})
+	// create new server, that listens on specified port
+	s := grpc.NewServer()
+	// registering calculator service, this must be invoked before
+	// calling Serve
+	calculatorpb.RegisterCalculatorServiceServer(s, &server{})
 
-	if err := serv.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("server failed to serve: %v", err)
 	}
 }

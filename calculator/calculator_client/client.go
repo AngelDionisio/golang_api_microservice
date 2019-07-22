@@ -10,34 +10,34 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello from Client!")
+	fmt.Println("Calculator client")
 
-	cc, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
+	// define client connection (with insecure as this is not production code)
+	cc, err := grpc.Dial("localhost:50053", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to: %v", err)
+		log.Fatalf("client could not connect to server: %v", err)
 	}
-	// close client connection upon leaving main
+	// defer close client connection
 	defer cc.Close()
 
 	c := calculatorpb.NewCalculatorServiceClient(cc)
 
-	doUnarySum(c)
+	doUnarySumOperation(c)
+
 }
 
-func doUnarySum(c calculatorpb.CalculatorServiceClient) {
-	fmt.Println("Starting sum unary operation RPC...")
-
-	req := &calculatorpb.CalculatorRequest{
-		Sum: &calculatorpb.Sum{
-			Num_1: 10,
-			Num_2: 20,
-		},
+// doUnarySumOperation makes a sumRequest to a provided CalculatorServiceClient
+func doUnarySumOperation(c calculatorpb.CalculatorServiceClient) {
+	log.Printf("Starting a Sumunary RPC... %v\n", c)
+	req := &calculatorpb.SumRequest{
+		FirstNumber:  5,
+		SecondNumber: 40,
 	}
 
-	res, err := c.Add(context.Background(), req)
+	res, err := c.Sum(context.Background(), req)
 	if err != nil {
-		log.Fatalf("error calling Add RPC: %v", err)
+		log.Fatalf("error while calling Sum RPC: %v", err)
 	}
 
-	log.Printf("Response from Add: %v", res.Result)
+	log.Printf("Response from Sum: %v\n", res.SumResult)
 }
