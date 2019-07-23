@@ -109,6 +109,9 @@ func doClientStreaming(c calculatorpb.CalculatorServiceClient) {
 	fmt.Printf("The average is: %v", res.GetAverage())
 }
 
+// doBiDiStreaming sends a stream of requests to the server
+// server continues listening until client is done sending messages
+// server keeps sending a new max each time one is sent
 func doBiDiStreaming(c calculatorpb.CalculatorServiceClient) {
 	log.Printf("Starting a bi-directional to findMaxium Client Streaming RPC\n")
 
