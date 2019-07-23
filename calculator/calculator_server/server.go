@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net"
+	"sort"
 
 	"github.com/simple/golang_api_microservice/calculator/calculatorpb"
 	"google.golang.org/grpc"
@@ -76,6 +77,52 @@ func (*server) ComputeAverage(stream calculatorpb.CalculatorService_ComputeAvera
 
 		sum += req.GetNumber()
 		count++
+	}
+
+}
+
+// MaxIntSlice return the maximum interger in a slice
+func MaxIntSlice(v []int) int {
+	sort.Ints(v)
+	return v[len(v)-1]
+}
+
+// MinIntSlice return the minimum interger in a slice
+func MinIntSlice(v []int) int {
+	sort.Ints(v)
+	return v[0]
+}
+
+func (*server) FindMaximum(stream calculatorpb.CalculatorService_FindMaximumServer) error {
+	fmt.Printf("Received FindMaximum RPC call\n")
+
+	currentMax := int32(0)
+
+	// receive messages from client
+	for {
+		req, err := stream.Recv()
+		// when we receive the last of the messages, return the max
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Printf("Error while reading FindMaximum client stream: %v\n", err)
+			return err
+		}
+
+		incomingNumber := req.GetNumber()
+		fmt.Printf("Server recieved a new number from stream...: %v\n", incomingNumber)
+		// compare incoming value to current max, if its greater, send this new max
+		if incomingNumber > currentMax {
+			currentMax = incomingNumber
+			sendErr := stream.Send(&calculatorpb.FindMaximumResponse{
+				Maximum: currentMax,
+			})
+			if sendErr != nil {
+				log.Fatalf("Error while trying to send data to client: %v", sendErr)
+				return sendErr
+			}
+		}
 	}
 
 }

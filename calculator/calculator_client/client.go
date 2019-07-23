@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"github.com/simple/golang_api_microservice/calculator/calculatorpb"
 	"google.golang.org/grpc"
@@ -31,7 +32,9 @@ func main() {
 
 	// doClientStreaming(c)
 
-	doErrorUnary(c)
+	doBiDiStreaming(c)
+
+	// doErrorUnary(c)
 
 }
 
@@ -82,7 +85,7 @@ func doServerStreaming(c calculatorpb.CalculatorServiceClient) {
 // when it finishes sending stream of messages, it closes and receives from server
 // and finally it prints the message
 func doClientStreaming(c calculatorpb.CalculatorServiceClient) {
-	log.Printf("Starting a ComputeAverage Client Streaming RPC")
+	log.Printf("Starting a ComputeAverage Client Streaming RPC\n")
 
 	stream, err := c.ComputeAverage(context.Background())
 	if err != nil {
@@ -104,6 +107,57 @@ func doClientStreaming(c calculatorpb.CalculatorServiceClient) {
 	}
 
 	fmt.Printf("The average is: %v", res.GetAverage())
+}
+
+func doBiDiStreaming(c calculatorpb.CalculatorServiceClient) {
+	log.Printf("Starting a bi-directional to findMaxium Client Streaming RPC\n")
+
+	// start streaming client
+	stream, err := c.FindMaximum(context.Background())
+
+	if err != nil {
+		log.Fatalf("error while opening stream to findMaxium: %v", err)
+	}
+
+	// blocking channel to assert all goroutines have finished
+	finishedChan := make(chan struct{})
+
+	// send goroutine
+	go func() {
+		numbers := []int32{4, 7, 2, 19, 4, 6, 32}
+		for _, number := range numbers {
+			fmt.Printf("Sending number to server: %v\n", number)
+			stream.Send(&calculatorpb.FindMaximumRequest{
+				Number: number,
+			})
+			time.Sleep(time.Millisecond * 1000)
+		}
+		// inform server we are done sending messages
+		stream.CloseSend()
+	}()
+
+	// receive goroutine
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				// no more messages being sent from server,
+				// so close blocking channel and break out of for loop
+				close(finishedChan)
+				break
+			}
+			if err != nil {
+				fmt.Printf("Problem while reading server stream for FindMaximum: %v", err)
+			}
+
+			// as long as there are new messages coming, its a new max, so print it
+			maximum := res.GetMaximum()
+			fmt.Printf("Client received a new maxium: %v\n", maximum)
+		}
+	}()
+
+	<-finishedChan
+
 }
 
 // doErrorUnary client sends two calls to SquareRoot
