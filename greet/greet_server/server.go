@@ -46,7 +46,7 @@ func (s *server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greet
 	return nil
 }
 
-func (s server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
+func (s *server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 	fmt.Printf("LongGreet function was invoked with a streaming request\n")
 	result := ""
 
@@ -66,6 +66,32 @@ func (s server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 		result += "Hello " + firstName + "! "
 	}
 
+}
+
+// GreetEveryone is a bi-directional API that sends a greeting everytime it gets a message
+func (s *server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
+	fmt.Printf("GreetEveryone function was invoked with a streaming request\n")
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Error while reading client stream: %v", err)
+			return err
+		}
+
+		firstName := req.GetGreeting().GetFirstName()
+		result := fmt.Sprintf("Hello %v! ", firstName)
+		// send back response from server
+		sendErr := stream.Send(&greetpb.GreetEveryoneResponse{
+			Result: result,
+		})
+		if sendErr != nil {
+			log.Fatalf("Error while sending data to client: %v", sendErr)
+		}
+	}
 }
 
 func main() {

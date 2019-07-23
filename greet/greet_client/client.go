@@ -28,7 +28,8 @@ func main() {
 
 	// doUnary(c)
 	// doServerStreaming(c)
-	doClientStreaming(c)
+	// doClientStreaming(c)
+	doBiDiStreaming(c)
 
 }
 
@@ -128,4 +129,70 @@ func doClientStreaming(c greetpb.GreetServiceClient) {
 
 	fmt.Printf("LongGreet response: %v\n", res)
 
+}
+
+func doBiDiStreaming(c greetpb.GreetServiceClient) {
+	fmt.Println("Starting to do a BiDi Streaming RPC...")
+
+	// create stream by invoking client, which returns a client and an error
+	stream, err := c.GreetEveryone(context.Background())
+	if err != nil {
+		log.Fatalf("error while creating stream: %v", err)
+	}
+
+	requests := []*greetpb.GreetEveryoneRequest{
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Angel",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Luz",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Julio",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Jose",
+			},
+		},
+	}
+
+	doneChannel := make(chan struct{})
+	// send a bunch of messages to client (as goRoutines)
+	go func() {
+		for _, req := range requests {
+			fmt.Printf("Sending message: %v\n", req)
+			stream.Send(req)
+			time.Sleep(time.Millisecond * 1000) // sleep for one second
+		}
+		stream.CloseSend()
+	}()
+
+	// receive a bunch of messages from client (goRoutines)
+	// when looking to know the function definition of a client or server
+	// look at the "<name>Server interface" on the service.pb.go
+	go func() {
+		for {
+			res, err := stream.Recv()
+			// when we finish receiving all messages from the server,
+			// then close the doneChannel to signal we are done, and stop blocking
+			if err == io.EOF {
+				close(doneChannel)
+			}
+			if err != nil {
+				log.Fatalf("Error while receiving from biDi client: %v", err)
+			}
+
+			fmt.Printf("Received: %v\n", res.GetResult())
+		}
+	}()
+
+	// block until everything is done
+	<-doneChannel
 }
