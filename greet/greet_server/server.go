@@ -11,6 +11,8 @@ import (
 
 	"github.com/simple/golang_api_microservice/greet/greetpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct{}
@@ -92,6 +94,30 @@ func (s *server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) 
 			log.Fatalf("Error while sending data to client: %v", sendErr)
 		}
 	}
+}
+
+func (*server) GreetWithDeadline(ctx context.Context, req *greetpb.GreetWithDeadlineRequest) (*greetpb.GreetWithDeadlineResponse, error) {
+	fmt.Printf("GreetWithDeadline function was invoked with %v\n", req)
+	// having server wait three seconds, and checking within context if the client has cancelled the request
+	// this allows us to test the timeout functionality
+	for i := 0; i < 3; i++ {
+		if ctx.Err() == context.Canceled {
+			// the client has cancelled the request
+			fmt.Println("the client has cancelled the request!")
+			return nil, status.Error(codes.Canceled, "the client has cancelled the request")
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	firstName := req.GetGreeting().GetFirstName()
+	lastName := req.GetGreeting().GetLastName()
+	result := fmt.Sprintf("Hello %v, %v", firstName, lastName)
+
+	res := &greetpb.GreetWithDeadlineResponse{
+		Result: result,
+	}
+
+	return res, nil
 }
 
 func main() {
