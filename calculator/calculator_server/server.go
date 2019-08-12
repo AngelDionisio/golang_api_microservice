@@ -9,7 +9,7 @@ import (
 	"net"
 	"sort"
 
-	"github.com/simple/golang_api_microservice/calculator/calculatorpb"
+	"github.com/angel/golang_api_microservice/calculator/calculatorpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

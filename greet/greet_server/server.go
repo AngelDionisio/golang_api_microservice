@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/simple/golang_api_microservice/greet/greetpb"
+	"github.com/angel/golang_api_microservice/greet/greetpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
